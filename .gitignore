@@ -1,5 +1,8 @@
 .DS_Store
 .gz
 .whl
+*.idea
+*.ipynb_checkpoints
 mymain.py
 mymain2.py
+__pycache__
