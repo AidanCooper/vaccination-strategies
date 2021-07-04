@@ -6,3 +6,5 @@
 mymain.py
 mymain2.py
 *__pycache__*
+*.idea*
+*.vscode*
