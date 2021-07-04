@@ -149,19 +149,17 @@ class AgeStructuredSIR(CompartmentalModel):
             fig, ax = plt.subplots(2, 2, figsize=(12, 12), sharex=True, sharey=False)
             ax = ax.flatten()
             for i, c in enumerate(df.columns):
-                if i < 4:
+                if i > 0 and i < 4:
                     ax[0].plot(df["Days"], df[c], label=c)
                 else:
                     ax[(i - 3) % 3 + 1].plot(df["Days"], df[c], label=c)
 
-            ax[0].legend()
-            ax[1].legend()
-            ax[2].legend()
-            ax[3].legend()
-            ax[2].set_xlabel("Number of Days")
-            ax[3].set_xlabel("Number of Days")
-            ax[0].set_ylabel("Number of people")
-            ax[2].set_ylabel("Number of People")
+            for i, a in enumerate(ax):
+                a.legend()
+                if i % 2 == 0:
+                    a.set_ylabel("Number of People")
+                if i in [2, 3]:
+                    a.set_xlabel("Number of Days")
             plt.close()
 
             return df, fig
