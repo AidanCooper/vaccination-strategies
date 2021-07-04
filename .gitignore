@@ -5,6 +5,6 @@
 *.ipynb_checkpoints
 mymain.py
 mymain2.py
-*pycache*
+*__pycache__*
 *.idea*
 *.vscode*
