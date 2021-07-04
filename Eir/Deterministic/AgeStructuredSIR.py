@@ -15,6 +15,9 @@ class AgeStructuredSIR(CompartmentalModel):
     Parameters
     ----------
 
+    labels: List[str]
+        Names for each group.
+
     beta: List[float]
         Effective transmission rate of infected people, on average.
 
@@ -115,21 +118,7 @@ class AgeStructuredSIR(CompartmentalModel):
         S, I, R = self._update(dt, S, I, R)
         return S, I, R
 
-    def _includeVar(self, sx: bool, ix: bool, rx: bool):
-        # list of the strings that will be returned and then passed into plot function
-        labels = []
-        # if the user wants to plot susceptible
-        if sx:
-            labels.append("Susceptible")
-        # if the user wants to plot infected
-        if ix:
-            labels.append("Infected")
-        # if the user wants to plot removed
-        if rx:
-            labels.append("Removed")
-        return labels
-
-    def run(self, days: int, dt: float, plot=True, Sbool=True, Ibool=True, Rbool=True):
+    def run(self, days: int, dt: float, plot=True):
         self.floatCheck([[days], [dt]])
         self.negValCheck([[days], [dt]])
         # creates evenly spaced array that spans day 0 to the day wanted
@@ -145,16 +134,36 @@ class AgeStructuredSIR(CompartmentalModel):
         # create the labels that will be the columns of the dataframe
         # create a dataframe
         df = pd.DataFrame.from_dict(data1)
+
+        for i, group in enumerate(self.labels):
+            data_group = {
+                "Days": t,
+                f"Susceptible_{group}": S[i],
+                f"Infected_{group}": I[i],
+                f"Removed_{group}": R[i],
+            }
+            df_group = pd.DataFrame.from_dict(data_group)
+            df = pd.merge(df, df_group, on="Days")
+
         # if the plot boolean is true aka they want a plot to be shown
         if plot:
-            # determine what should be plotted
-            included = self._includeVar(Sbool, Ibool, Rbool)
-            # create the plot & label the x and y axis
-            fig = df.plot(x="Days", y=included)
-            plt.xlabel("Number of Days")
-            plt.ylabel("Number of People")
-            # display the plot
-            plt.show()
+            fig, ax = plt.subplots(2, 2, figsize=(12, 12), sharex=True, sharey=False)
+            ax = ax.flatten()
+            for i, c in enumerate(df.columns):
+                if i < 4:
+                    ax[0].plot(df["Days"], df[c], label=c)
+                else:
+                    ax[(i - 3) % 3 + 1].plot(df["Days"], df[c], label=c)
+
+            ax[0].legend()
+            ax[1].legend()
+            ax[2].legend()
+            ax[3].legend()
+            ax[2].set_xlabel("Number of Days")
+            ax[3].set_xlabel("Number of Days")
+            ax[0].set_ylabel("Number of people")
+            ax[2].set_ylabel("Number of People")
+            plt.close()
             # return dataframe & plot object
             return df, fig
         # return the dataframe
