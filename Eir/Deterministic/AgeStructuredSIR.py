@@ -84,13 +84,15 @@ class AgeStructuredSIR(CompartmentalModel):
 
     # computes the derivatives at a particular point, given the beta/gamma of object and current s and i values
     # @dispatch(float, float)
-    def _deriv(self, s, i):
-        # y is the amount leaving I compartment and entering R compartment
+    def _deriv(self, s: np.ndarray, i: np.ndarray):
+        # amount leaving I -> R
         y = self.gamma * i
-        # x is the amount of leaving S compartment and entering I
+        # amount leaving S -> I
         x = np.zeros_like(y)
         for n in range(len(x)):
             x[n] = (self.beta[n] * i * s[n] / self.N).sum()
+
+        # returns in the order S, I, R
         return -x, x - y, y
 
     # runs Euler's Method
@@ -98,7 +100,9 @@ class AgeStructuredSIR(CompartmentalModel):
     def _update(self, dt: float, S: np.ndarray, I: np.ndarray, R: np.ndarray):
         # for all the days that ODE will be solved
         for i in range(1, len(S[0])):
+            # get the derivatives at the point before for the Euler's method
             f = self._deriv(S[:, i - 1], I[:, i - 1])
+            # computer the Euler's approximation f(x+h) = f(x) + h * (df/dx)
             S[:, i] = S[:, i - 1] + dt * f[0]
             I[:, i] = I[:, i - 1] + dt * f[1]
             R[:, i] = R[:, i - 1] + dt * f[2]
@@ -121,20 +125,16 @@ class AgeStructuredSIR(CompartmentalModel):
     def run(self, days: int, dt: float, plot=True):
         self.floatCheck([[days], [dt]])
         self.negValCheck([[days], [dt]])
-        # creates evenly spaced array that spans day 0 to the day wanted
+
         t = np.linspace(0, days, int(days / dt) + 1)
         S, I, R = self._simulate(days, dt)
-        # makes a dictionary so that it can be easily converted to a dataframe
         data1 = {
             "Days": t,
             "Susceptible": S.sum(axis=0),
             "Infected": I.sum(axis=0),
             "Removed": R.sum(axis=0),
         }
-        # create the labels that will be the columns of the dataframe
-        # create a dataframe
-        df = pd.DataFrame.from_dict(data1)
-
+        df = pd.DataFrame.from_dict(data=data1)
         for i, group in enumerate(self.labels):
             data_group = {
                 "Days": t,
@@ -145,7 +145,6 @@ class AgeStructuredSIR(CompartmentalModel):
             df_group = pd.DataFrame.from_dict(data_group)
             df = pd.merge(df, df_group, on="Days")
 
-        # if the plot boolean is true aka they want a plot to be shown
         if plot:
             fig, ax = plt.subplots(2, 2, figsize=(12, 12), sharex=True, sharey=False)
             ax = ax.flatten()
@@ -164,9 +163,9 @@ class AgeStructuredSIR(CompartmentalModel):
             ax[0].set_ylabel("Number of people")
             ax[2].set_ylabel("Number of People")
             plt.close()
-            # return dataframe & plot object
+
             return df, fig
-        # return the dataframe
+
         return df
 
     # plot an accumulation function of total cases
@@ -189,10 +188,7 @@ class AgeStructuredSIR(CompartmentalModel):
             "Removed": R.sum(axis=0),
             "Total Cases": cases.sum(axis=0),
         }
-        # create the column labels
-        labels = ["Days", "Susceptible", "Infected", "Removed", "Total Cases"]
-        # convert to dataframe
-        df = pd.DataFrame(data=data1, columns=labels)
+        df = pd.DataFrame.from_dict(data=data1)
         if plot:
             # do some plotting
             df.plot(x="Days", y=["Total Cases"])
