@@ -4,6 +4,8 @@ from matplotlib import pyplot as plt
 from multipledispatch import dispatch
 import Eir.exceptions as e
 
+from typing import List
+
 # sources:
 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5348083/
 
@@ -11,11 +13,14 @@ import Eir.exceptions as e
 # this is an abstract class that should never be instantiated
 class CompartmentalModel:
     """ Base Class for all Deterministic Compartmental Models. Should never be instantiated."""
-    def __init__(self, S0, I0):
-        assert S0 >= 0
-        assert I0 >= 0
-        self.S0 = S0
-        self.I0 = I0
+
+    def __init__(self, S0: List[int], I0: List[int]):
+        for s in S0:
+            assert s >= 0
+        for i in I0:
+            assert i >= 0
+        self.S0 = np.array(S0)
+        self.I0 = np.array(I0)
 
     @dispatch()
     def _deriv(self):
@@ -34,31 +39,32 @@ class CompartmentalModel:
     @dispatch(int, float, bool)
     def run(self, days: int, dt: float, plot=True):
         pass
-    
+
     def intCheck(self, vals: list):
         for val in vals:
-            if type(val) != int:
-                raise e.NotIntException(val)
-    
+            for v in val:
+                if type(v) != int:
+                    raise e.NotIntException(v)
+
     def floatCheck(self, vals: list):
         for val in vals:
-            if type(val) != int and type(val) != float:
-                raise e.NotFloatException(val)
-    
+            for v in val:
+                if type(v) != int and type(v) != float:
+                    raise e.NotFloatException(v)
+
     def negValCheck(self, vals: list):
         for val in vals:
-            if val < 0:
-                raise e.NegativeValException(val)
-    
+            for v in val:
+                if v < 0:
+                    raise e.NegativeValException(v)
+
     def probCheck(self, vals: list):
         for val in vals:
-            if not 0 <= val <= 1:
-                raise e.ProbabilityExcpetion(val)
-    
+            for v in val:
+                if not 0 <= v <= 1:
+                    raise e.ProbabilityException(v)
 
-    
-
-        
-
-
-
+    def lengthCheck(self, vals: list):
+        lengths = np.array([len(val) for val in vals])
+        if len(set(lengths)) != 1:
+            raise e.LengthException(lengths)
