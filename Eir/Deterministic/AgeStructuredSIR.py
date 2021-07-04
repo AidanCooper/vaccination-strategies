@@ -34,6 +34,7 @@ class AgeStructuredSIR(CompartmentalModel):
 
     def __init__(
         self,
+        labels: List[str],
         beta: List[float],
         gamma: List[float],
         S0: List[int],
@@ -44,9 +45,9 @@ class AgeStructuredSIR(CompartmentalModel):
         self.intCheck([S0, I0, R0])
         self.floatCheck([beta, gamma, S0, I0, R0])
         self.negValCheck([beta, gamma, S0, I0, R0])
-        self.lengthCheck([beta, gamma, S0, I0, R0])
+        self.lengthCheck([labels, beta, gamma, S0, I0, R0])
         self.probCheck([gamma])
-        super().__init__(S0, I0)
+        super().__init__(labels, S0, I0)
         self.R0 = np.array(R0)
         self.beta = np.array(beta)
         self.gamma = np.array(gamma)

@@ -14,11 +14,12 @@ from typing import List
 class CompartmentalModel:
     """ Base Class for all Deterministic Compartmental Models. Should never be instantiated."""
 
-    def __init__(self, S0: List[int], I0: List[int]):
+    def __init__(self, labels: List[str], S0: List[int], I0: List[int]):
         for s in S0:
             assert s >= 0
         for i in I0:
             assert i >= 0
+        self.labels = labels
         self.S0 = np.array(S0)
         self.I0 = np.array(I0)
 
