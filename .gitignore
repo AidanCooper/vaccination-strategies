@@ -5,4 +5,4 @@
 *.ipynb_checkpoints
 mymain.py
 mymain2.py
-__pycache__
+*__pycache__*
