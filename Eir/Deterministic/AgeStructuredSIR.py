@@ -90,7 +90,7 @@ class AgeStructuredSIR(CompartmentalModel):
         # amount leaving S -> I
         x = np.zeros_like(y)
         for n in range(len(x)):
-            x[n] = (self.beta[n] * i * s[n] / self.N).sum()
+            x[n] = (self.beta[n] * i * s[n] / self.N[n]).sum()
 
         # returns in the order S, I, R
         return -x, x - y, y

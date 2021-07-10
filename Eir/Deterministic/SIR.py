@@ -25,11 +25,12 @@ class SIR(CompartmentalModel):
 
     def __init__(self, beta: float, gamma: float, S0: int, I0: int, R0: int):
         # run error checks
-        self.intCheck([S0, I0, R0])
-        self.floatCheck([beta, gamma, S0, I0, R0])
-        self.negValCheck([beta, gamma, S0, I0, R0])
-        self.probCheck([gamma])
-        super().__init__(S0, I0)
+        self.intCheck([[S0], [I0], [R0]])
+        self.floatCheck([[beta], [gamma], [S0], [I0], [R0]])
+        self.negValCheck([[beta], [gamma], [S0], [I0], [R0]])
+        self.probCheck([[gamma]])
+        self.S0 = S0
+        self.I0 = I0
         self.R0 = R0
         self.beta = beta
         self.gamma = gamma
@@ -109,8 +110,8 @@ class SIR(CompartmentalModel):
         return labels
 
     def run(self, days: int, dt: float, plot=True, Sbool=True, Ibool=True, Rbool=True):
-        self.floatCheck([days, dt])
-        self.negValCheck([days, dt])
+        self.floatCheck([[days], [dt]])
+        self.negValCheck([[days], [dt]])
         # creates evenly spaced array that spans day 0 to the day wanted
         t = np.linspace(0, days, int(days / dt) + 1)
         S, I, R = self._simulate(days, dt)

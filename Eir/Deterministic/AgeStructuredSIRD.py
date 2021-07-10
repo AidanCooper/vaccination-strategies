@@ -70,7 +70,7 @@ class AgeStructuredSIRD(AgeStructuredSIR):
         # amount leaving S -> I
         x = np.zeros_like(y)
         for j in range(len(x)):
-            x[j] = (self.beta[j] * i * s[j] / n).sum()
+            x[j] = (self.beta[j] * i * s[j] / n[j]).sum()
 
         # returns in the order S, I, R, D
         return -x, x - y - z, y, z
@@ -93,8 +93,7 @@ class AgeStructuredSIRD(AgeStructuredSIR):
             I[:, i] = I[:, i - 1] + dt * f[1]
             R[:, i] = R[:, i - 1] + dt * f[2]
             D[:, i] = D[:, i - 1] + dt * f[3]
-            # remove the deaths from the living population
-            n = n - f[3] * dt
+
         return S, I, R, D
 
     def _simulate(self, days: int, dt: float):
@@ -154,10 +153,11 @@ class AgeStructuredSIRD(AgeStructuredSIR):
             fig, ax = plt.subplots(3, 2, figsize=(12, 16), sharex=True, sharey=False)
             ax = ax.flatten()
             for i, c in enumerate(df.columns):
-                if i > 0 and i < 5:
-                    ax[0].plot(df["Days"], df[c], label=c)
-                else:
-                    ax[(i - 4) % 4 + 1].plot(df["Days"], df[c], label=c)
+                if i != 0:
+                    if i < 5:
+                        ax[0].plot(df["Days"], df[c], label=c)
+                    else:
+                        ax[(i - 4) % 4 + 1].plot(df["Days"], df[c], label=c)
 
             for i, a in enumerate(ax[:-1]):
                 a.legend()
