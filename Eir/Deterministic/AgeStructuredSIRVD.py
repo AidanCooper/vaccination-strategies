@@ -96,8 +96,9 @@ class AgeStructuredSIRVD(AgeStructuredSIRD):
         z = self.omega * i
         # amount leaving S -> I
         x = np.zeros_like(y)
+        n_p = n / n.sum()  # proportion of living in each group
         for j in range(len(x)):
-            x[j] = (self.beta[j] * i * s[j] / n[j]).sum()
+            x[j] = (self.beta[j] * i * s[j] / n * n_p).sum()
 
         # returns in the order S, I, R, D
         return -x, x - y - z, y, z

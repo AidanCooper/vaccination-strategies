@@ -89,8 +89,9 @@ class AgeStructuredSIR(CompartmentalModel):
         y = self.gamma * i
         # amount leaving S -> I
         x = np.zeros_like(y)
+        n_p = n / n.sum()  # proportion of living in each group
         for n in range(len(x)):
-            x[n] = (self.beta[n] * i * s[n] / self.N[n]).sum()
+            x[n] = (self.beta[n] * i * s[n] / self.N * n_p).sum()
 
         # returns in the order S, I, R
         return -x, x - y, y
