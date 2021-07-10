@@ -2,9 +2,10 @@ from .AgeStructuredSIRD import AgeStructuredSIRD
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
 from multipledispatch import dispatch
 
-from typing import List
+from typing import List, Optional
 
 
 # Flow of the Compartmental Model:
@@ -63,7 +64,7 @@ class AgeStructuredSIRVD(AgeStructuredSIRD):
         self.Vd = Vd
         for g, o in zip(self.gamma, self.omega):
             assert g + o <= 1
-        self.N = S0 + I0 + R0 + V0
+        self.N = self.S0 + self.I0 + self.R0 + self.V0
 
     def changeS0(self, x: List[int]):
         self.S0 = x
@@ -103,8 +104,10 @@ class AgeStructuredSIRVD(AgeStructuredSIRD):
         # returns in the order S, I, R, D
         return -x, x - y - z, y, z
 
-    def _vaccinate(self, S, V, dt, reverse: bool):
-        if reverse:
+    def _vaccinate(self, S, V, dt, reverse: bool, delay: int, i):
+        if i * dt < delay:
+            return S, V
+        elif reverse:
             s = S[::-1].copy()
             v = V[::-1].copy()
             for i, Si in enumerate(S[::-1]):
@@ -136,11 +139,13 @@ class AgeStructuredSIRVD(AgeStructuredSIRD):
 
     # run Euler's method
     # @dispatch(float, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
-    def _update(self, dt: float, S, I, R, V, D, reverse: bool):
+    def _update(self, dt: float, S, I, R, V, D, reverse: bool, delay: int):
         # run Euler's method
         for i in range(1, len(S[0])):
             # vaccinate
-            s, V[:, i] = self._vaccinate(S[:, i - 1], V[:, i - 1], dt, reverse)
+            s, V[:, i] = self._vaccinate(
+                S[:, i - 1], V[:, i - 1], dt, reverse, delay, i
+            )
 
             n = np.zeros(S.shape[0])
             for j in range(len(n)):
@@ -156,7 +161,7 @@ class AgeStructuredSIRVD(AgeStructuredSIRD):
 
         return S, I, R, V, D
 
-    def _simulate(self, days: int, dt: float, reverse: bool):
+    def _simulate(self, days: int, dt: float, reverse: bool, delay: int):
         # total number of iterations that will be run + the starting value at time 0
         size = int(days / dt + 1)
         # create the arrays to store the different values
@@ -177,7 +182,7 @@ class AgeStructuredSIRVD(AgeStructuredSIRD):
             np.zeros_like(self.S0),
         )
         # run the Euler's Method
-        S, I, R, V, D = self._update(dt, S, I, R, V, D, reverse)
+        S, I, R, V, D = self._update(dt, S, I, R, V, D, reverse, delay)
         return S, I, R, V, D
 
     # @dispatch(int, float, plot=bool, Sbool=bool, Ibool=bool, Rbool=bool, Vbool=bool)
@@ -185,14 +190,35 @@ class AgeStructuredSIRVD(AgeStructuredSIRD):
         self,
         days: int,
         dt: float,
-        reverse: bool = False,
+        reverse_vaccination: bool = False,
+        delay_vaccination: int = 0,
         plot=True,
-    ):
+    ) -> (pd.DataFrame, Optional[Figure]):
+        """
+        Parameters
+        ----------
+        days : int
+            Number of days for simulation.
+        dt : float
+            Increment of simulation as a fraction of `days`.
+        reverse_vaccination : bool
+            If False, vaccinate the groups in the order they appear in `self.labels`. If
+            True, vaccinate the groups in reverse order.
+        delay_vaccination : int
+            Optionally delay vaccination rollout by this many days.
+        plot : bool
+            Optionally plot model results.
+
+        Returns
+        -------
+        (pd.DataFrame, Optional[Figure])
+            pandas DataFrame of results at each simulation step, and optional plot.
+        """
         self.floatCheck([[days], [dt]])
         self.negValCheck([[days], [dt]])
 
         t = np.linspace(0, days, int(days / dt) + 1)
-        S, I, R, V, D = self._simulate(days, dt, reverse)
+        S, I, R, V, D = self._simulate(days, dt, reverse_vaccination, delay_vaccination)
         data1 = {
             "Days": t,
             "Susceptible": S.sum(axis=0),
@@ -232,7 +258,12 @@ class AgeStructuredSIRVD(AgeStructuredSIRD):
                     a.set_xlabel("Number of Days")
             plt.close()
 
+            self.df_results_ = df
+
             return df, fig
+
+        self.df_results_ = df
+
         return df
 
     # plot an accumulation function of total cases
@@ -265,3 +296,45 @@ class AgeStructuredSIRVD(AgeStructuredSIRD):
             plt.show()
         # return dataframe
         return df
+
+    def end_state(self) -> pd.DataFrame:
+        df_end = pd.DataFrame(index=[["Combined"] + self.labels])
+        df_end["Start_Count"] = np.array([sum(self.N)] + list(self.N))
+
+        df_end["End_Susceptible"] = (
+            self.df_results_.iloc[-1][
+                ["Susceptible"] + [f"Susceptible_{l}" for l in self.labels]
+            ]
+            .astype(int)
+            .values
+        )
+        df_end["Infected_Count"] = 0  # placeholder - populated later
+        df_end["Removed_Count"] = (
+            self.df_results_.iloc[-1][
+                ["Removed"] + [f"Removed_{l}" for l in self.labels]
+            ]
+            .astype(int)
+            .values
+        )
+        df_end["Vaccinated_Count"] = (
+            self.df_results_.iloc[-1][
+                ["Vaccinated"] + [f"Vaccinated_{l}" for l in self.labels]
+            ]
+            .astype(int)
+            .values
+        )
+        df_end["Infected_Count"] = (
+            df_end["Start_Count"]
+            - df_end["End_Susceptible"]
+            - df_end["Vaccinated_Count"]
+        )
+        df_end["Deaths_Count"] = (
+            self.df_results_.iloc[-1][["Deaths"] + [f"Deaths_{l}" for l in self.labels]]
+            .astype(int)
+            .values
+        )
+        df_end["Fatality_Rate%"] = (
+            df_end["Deaths_Count"] / df_end["Infected_Count"] * 100
+        )
+
+        return df_end
