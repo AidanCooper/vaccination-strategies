@@ -72,6 +72,7 @@ class AgeStructuredSIRD(AgeStructuredSIR):
         n_p = n / n.sum()  # proportion of living in each group
         for j in range(len(x)):
             x[j] = (self.beta[j] * i * s[j] / n * n_p).sum()
+            # x[j] = (self.beta[j] * i * s[j] / n[j]).sum()
 
         # returns in the order S, I, R, D
         return -x, x - y - z, y, z
@@ -83,14 +84,12 @@ class AgeStructuredSIRD(AgeStructuredSIR):
     ) -> tuple:
         # run Euler's method
         for i in range(1, len(S[0])):
-            n = np.zeros(S.shape[0])
-            for j in range(len(n)):
-                n[j] = int(S[j][i - 1] + I[j][i - 1] + R[j][i - 1])
+            n = S[:, i - 1] + I[:, i - 1] + R[:, i - 1]  # living population
 
             # get the derivatives at the point before for the Euler's method
             f = self._deriv(S[:, i - 1], I[:, i - 1], n)
             # computer the Euler's approximation f(x+h) = f(x) + h * (df/dx)
-            S[:, i] = S[:, i - 1] + dt * f[0]
+            S[:, i] = [max(v, 0) for v in S[:, i - 1] + dt * f[0]]
             I[:, i] = I[:, i - 1] + dt * f[1]
             R[:, i] = R[:, i - 1] + dt * f[2]
             D[:, i] = D[:, i - 1] + dt * f[3]
@@ -233,8 +232,10 @@ class AgeStructuredSIRD(AgeStructuredSIR):
             .astype(int)
             .values
         )
-        df_end["Fatality_Rate%"] = (
-            df_end["Deaths_Count"] / df_end["Infected_Count"] * 100
+        df_end["Fatality_Rate%"] = df_end["Deaths_Count"] / (
+            df_end["Removed_Count"]
+            + df_end["Deaths_Count"]
+            - np.array([sum(self.R0)] + list(self.R0))
         )
 
         return df_end
