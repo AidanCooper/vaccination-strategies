@@ -9,9 +9,5 @@ sys.path.insert(0, path)
 from Eir.Deterministic.AgeStructuredSIR import *
 from Eir.Deterministic.AgeStructuredSIRD import *
 from Eir.Deterministic.AgeStructuredSIRVD import *
-from Eir.Deterministic.SEIR import *
 from Eir.Deterministic.SIR import *
 from Eir.Deterministic.SIRD import *
-from Eir.Deterministic.SIRS import *
-from Eir.Deterministic.SIRV import *
-from Eir.Deterministic.SIS import *
