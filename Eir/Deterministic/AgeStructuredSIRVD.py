@@ -97,10 +97,8 @@ class AgeStructuredSIRVD(AgeStructuredSIRD):
         z = self.omega * i
         # amount leaving S -> I
         x = np.zeros_like(y)
-        n_p = n / n.sum()  # proportion of living in each group
         for j in range(len(x)):
-            x[j] = (self.beta[j] * i * s[j] / n * n_p).sum()
-            # x[j] = (self.beta[j] * i * s[j] / n[j]).sum()
+            x[j] = (self.beta[j] * i * s[j] / n.sum()).sum()
 
         # returns in the order S, I, R, D
         return -x, x - y - z, y, z
@@ -329,6 +327,7 @@ class AgeStructuredSIRVD(AgeStructuredSIRD):
             df_end["Start_Count"]
             - df_end["End_Susceptible"]
             - df_end["Vaccinated_Count"]
+            - np.array([sum(self.R0)] + list(self.R0))
         )
         df_end["Deaths_Count"] = (
             self.df_results_.iloc[-1][["Deaths"] + [f"Deaths_{l}" for l in self.labels]]

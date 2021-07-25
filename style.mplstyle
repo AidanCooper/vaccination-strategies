@@ -13,7 +13,7 @@ font.family : Noto Sans, DejaVu Sans
 font.weight : 500
 legend.frameon : False
 legend.fontsize : 12
-lines.linewidth : 2.0
+lines.linewidth : 3.0
 text.color : 2B3A42
 xtick.labelsize : 14
 xtick.color : 2B3A42

@@ -125,7 +125,10 @@ class SIRD(SIR):
             plt.xlabel("Number of Days")
             plt.ylabel("Number of People")
             plt.show()
+            self.df_results_ = df
             return df, fig
+
+        self.df_results_ = df
         return df
 
     # plot an accumulation function of total cases
@@ -158,5 +161,24 @@ class SIRD(SIR):
             plt.xlabel("Days")
             plt.ylabel("Total Cases")
             plt.show()
-        # return dataframe
+
         return df
+
+    def end_state(self) -> pd.DataFrame:
+        df_end = pd.DataFrame(index=["Overall"])
+        df_end["Start_Count"] = self.N
+
+        df_end["End_Susceptible"] = self.df_results_.iloc[-1]["Susceptible"].astype(int)
+        df_end["Infected_Count"] = 0  # placeholder - populated later
+        df_end["Removed_Count"] = self.df_results_.iloc[-1]["Removed"].astype(int)
+        df_end["Infected_Count"] = (
+            df_end["Start_Count"] - df_end["End_Susceptible"] - self.R0
+        )
+        df_end["Deaths_Count"] = self.df_results_.iloc[-1]["Deaths"].astype(int)
+        df_end["Fatality_Rate%"] = (
+            df_end["Deaths_Count"]
+            / (df_end["Removed_Count"] + df_end["Deaths_Count"] - self.R0)
+            * 100
+        )
+
+        return df_end

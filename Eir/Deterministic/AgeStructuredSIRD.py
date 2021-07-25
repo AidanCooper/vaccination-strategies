@@ -69,10 +69,8 @@ class AgeStructuredSIRD(AgeStructuredSIR):
         z = self.omega * i
         # amount leaving S -> I
         x = np.zeros_like(y)
-        n_p = n / n.sum()  # proportion of living in each group
         for j in range(len(x)):
-            x[j] = (self.beta[j] * i * s[j] / n * n_p).sum()
-            # x[j] = (self.beta[j] * i * s[j] / n[j]).sum()
+            x[j] = (self.beta[j] * i * s[j] / n.sum()).sum()
 
         # returns in the order S, I, R, D
         return -x, x - y - z, y, z
@@ -150,7 +148,7 @@ class AgeStructuredSIRD(AgeStructuredSIR):
             df = pd.merge(df, df_group, on="Days")
 
         if plot:
-            fig, ax = plt.subplots(3, 2, figsize=(12, 16), sharex=True, sharey=False)
+            fig, ax = plt.subplots(2, 3, figsize=(12, 8), sharex=True, sharey=False)
             ax = ax.flatten()
             for i, c in enumerate(df.columns):
                 if i != 0:
@@ -161,7 +159,7 @@ class AgeStructuredSIRD(AgeStructuredSIR):
 
             for i, a in enumerate(ax[:-1]):
                 a.legend()
-                if i % 2 == 0:
+                if i % 3 == 0:
                     a.set_ylabel("Number of People")
                 if i in [3, 4]:
                     a.set_xlabel("Number of Days")
@@ -226,16 +224,24 @@ class AgeStructuredSIRD(AgeStructuredSIR):
             .astype(int)
             .values
         )
-        df_end["Infected_Count"] = df_end["Start_Count"] - df_end["End_Susceptible"]
+        df_end["Infected_Count"] = (
+            df_end["Start_Count"]
+            - df_end["End_Susceptible"]
+            - np.array([sum(self.R0)] + list(self.R0))
+        )
         df_end["Deaths_Count"] = (
             self.df_results_.iloc[-1][["Deaths"] + [f"Deaths_{l}" for l in self.labels]]
             .astype(int)
             .values
         )
-        df_end["Fatality_Rate%"] = df_end["Deaths_Count"] / (
-            df_end["Removed_Count"]
-            + df_end["Deaths_Count"]
-            - np.array([sum(self.R0)] + list(self.R0))
+        df_end["Fatality_Rate%"] = (
+            df_end["Deaths_Count"]
+            / (
+                df_end["Removed_Count"]
+                + df_end["Deaths_Count"]
+                - np.array([sum(self.R0)] + list(self.R0))
+            )
+            * 100
         )
 
         return df_end
